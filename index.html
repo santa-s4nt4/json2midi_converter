@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON to MIDI Converter</title>
+
+  <script src="https://unpkg.com/@tonejs/midi"></script>
+
+  <style>
+    /* --- Font Import --- */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@100;300;400;700&family=Noto+Sans+JP:wght@100;300;400&display=swap');
+
+    /* --- Base Styles --- */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #1c1bd8;
+      /* 指定のブルー */
+      color: #fff;
+      font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-weight: 100;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* --- Layout --- */
+    .global-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 40px 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      box-sizing: border-box;
+      z-index: 100;
+    }
+
+    .logo a {
+      font-size: 1.2rem;
+      font-weight: 300;
+      display: inline-block;
+      letter-spacing: 0.2em;
+      line-height: 1;
+    }
+
+    /* --- Content --- */
+    .text-content {
+      max-width: 800px;
+      margin: 180px auto 100px;
+      padding: 0 50px;
+      line-height: 1.5em;
+    }
+
+    .text-content h1 {
+      font-size: 2.2rem;
+      font-weight: 100;
+      letter-spacing: 0.15em;
+      margin-bottom: 2.2rem;
+      line-height: 2.5rem;
+    }
+
+    .text-content p {
+      font-size: 1.05rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.6rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 300;
+      letter-spacing: 0.075em;
+    }
+
+    /* --- Tool UI --- */
+    .tool-area {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      background-color: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      color: #fff;
+      font-family: 'Menlo', 'Monaco', monospace;
+      font-size: 0.9rem;
+      padding: 15px;
+      /* box-sizingを追加してパディングによるはみ出しを防止 */
+      box-sizing: border-box;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.3s;
+      font-weight: 300;
+    }
+
+    /* readonly時のスタイル：少し暗くして入力不可であることを視覚的に伝える */
+    textarea[readonly] {
+      color: rgba(255, 255, 255, 0.7);
+      cursor: default;
+    }
+
+    textarea:focus {
+      border-color: #fff;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    #fileName {
+      font-size: 0.9rem;
+      opacity: 0.7;
+      margin-left: 10px;
+      letter-spacing: 0.05em;
+      word-break: break-all;
+      /* 長いファイル名でのレイアウト崩れ防止 */
+    }
+
+    .btn {
+      display: inline-block;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #fff;
+      padding: 12px 30px;
+      font-family: "Noto Sans", sans-serif;
+      font-size: 1rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+      /* 【修正点】パディングを含めて幅を計算させる設定 */
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: #fff;
+      color: #1c1bd8;
+      border-color: #fff;
+    }
+
+    .btn-primary {
+      border-color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-primary:hover {
+      background: #fff;
+      color: #1c1bd8;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #message {
+      margin-top: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      min-height: 1.5em;
+    }
+
+    .success {
+      color: #4fffa8;
+    }
+
+    .error {
+      color: #ff8e8e;
+    }
+
+    /* Mobile Styles */
+    @media screen and (max-width: 768px) {
+      .global-header {
+        padding: 25px 20px;
+      }
+
+      .text-content {
+        margin-top: 120px;
+        padding: 0 20px;
+      }
+
+      .text-content h1 {
+        font-size: 1.4rem;
+      }
+
+      /* スマホ時はボタンを横幅いっぱいに */
+      .btn {
+        width: 100%;
+      }
+
+      /* コントロール群を縦並びに */
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #fileName {
+        margin-left: 0;
+        text-align: center;
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="global-header">
+    <div class="logo"><a href="#">JSON TO MIDI (Tone.js)</a></div>
+  </header>
+
+  <div class="text-content">
+    <p>
+      @tonejs/midi 形式のJSONファイルをMIDIファイル(.mid)に変換します。<br>
+      生成されたファイルはAbleton Live等で使用可能です。
+    </p>
+
+    <div class="tool-area">
+      <div class="controls">
+        <label class="btn">
+          Select JSON File
+          <input type="file" id="fileInput" accept=".json">
+        </label>
+        <span id="fileName"></span>
+      </div>
+
+      <textarea id="jsonInput" readonly placeholder="Selected file content will appear here..."></textarea>
+
+      <div class="controls" style="margin-top: 1rem; justify-content: flex-end;">
+        <button id="convertBtn" class="btn btn-primary">Download MIDI</button>
+      </div>
+
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- ファイル読み込み処理 ---
+    const fileInput = document.getElementById('fileInput');
+    const fileNameSpan = document.getElementById('fileName');
+    const jsonInput = document.getElementById('jsonInput');
+
+    fileInput.addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      fileNameSpan.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        jsonInput.value = e.target.result;
+        document.getElementById('message').textContent = 'Loaded: ' + file.name;
+        document.getElementById('message').className = '';
+      };
+      reader.readAsText(file);
+    });
+
+    // --- 変換処理 (@tonejs/midi 使用) ---
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = 'Processing...';
+      messageEl.className = '';
+
+      const rawJson = jsonInput.value;
+      if (!rawJson.trim()) {
+        messageEl.textContent = 'Error: No JSON file loaded.';
+        messageEl.className = 'error';
+        return;
+      }
+
+      try {
+        let rawData = JSON.parse(rawJson);
+        if (rawData.fullContent) {
+          rawData = rawData.fullContent;
+        }
+
+        if (typeof Midi === 'undefined') {
+          throw new Error("Library '@tonejs/midi' failed to load.");
+        }
+
+        const midi = new Midi();
+
+        if (rawData.header && rawData.header.bpm) {
+          midi.header.setTempo(rawData.header.bpm);
+        }
+
+        const tracksSource = rawData.tracks || (Array.isArray(rawData) ? rawData : []);
+
+        tracksSource.forEach((trackSrc, index) => {
+          const track = midi.addTrack();
+          track.name = trackSrc.name || `Track ${index + 1}`;
+          if (trackSrc.instrument) {
+            track.instrument = trackSrc.instrument;
+          }
+
+          if (trackSrc.notes && Array.isArray(trackSrc.notes)) {
+            trackSrc.notes.forEach(note => {
+              track.addNote({
+                midi: note.midi,
+                time: note.time,
+                duration: note.duration,
+                velocity: note.velocity !== undefined ? note.velocity : 0.8
+              });
+            });
+          }
+        });
+
+        const midiData = midi.toArray();
+        const blob = new Blob([midiData], { type: "audio/midi" });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+
+        downloadLink.href = url;
+
+        let outName = 'converted_tone.mid';
+        if (rawData.header && rawData.header.name) {
+          outName = rawData.header.name + '.mid';
+        } else if (fileInput.files[0]) {
+          outName = fileInput.files[0].name.replace(/\.json$/i, '') + '.mid';
+        }
+
+        downloadLink.download = outName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(url);
+
+        messageEl.textContent = `Success: Downloaded "${outName}"`;
+        messageEl.className = 'success';
+
+      } catch (e) {
+        console.error(e);
+        messageEl.textContent = 'Error: ' + e.message;
+        messageEl.className = 'error';
+      }
+    });
+  </script>
+</body>
+
+</html>
