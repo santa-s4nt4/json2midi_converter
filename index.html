@@ -125,6 +125,8 @@
       opacity: 0.7;
       margin-left: 10px;
       letter-spacing: 0.05em;
+      font-weight: 300;
+      ;
       word-break: break-all;
       /* 長いファイル名でのレイアウト崩れ防止 */
     }
@@ -170,7 +172,7 @@
 
     #message {
       margin-top: 1.5rem;
-      font-weight: 400;
+      font-weight: 300;
       letter-spacing: 0.05em;
       min-height: 1.5em;
     }
@@ -255,9 +257,20 @@
     const fileNameSpan = document.getElementById('fileName');
     const jsonInput = document.getElementById('jsonInput');
 
+    // 同じファイルを再選択した場合でもイベントが発火するようにクリック時に値をリセット
+    fileInput.addEventListener('click', function (e) {
+      e.target.value = '';
+    });
+
     fileInput.addEventListener('change', function (e) {
       const file = e.target.files[0];
       if (!file) return;
+
+      // 読み込み開始時に以前の内容をクリアして、古いデータが残らないようにする
+      jsonInput.value = '';
+      document.getElementById('message').textContent = 'Loading...';
+      document.getElementById('message').className = '';
+
       fileNameSpan.textContent = file.name;
       const reader = new FileReader();
       reader.onload = function (e) {
